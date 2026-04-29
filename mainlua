@@ -1,9 +1,11 @@
-# FevHubMain1
-print("FEVHub Optimized Loader Starting...")
+-- =============================================
+-- FEVHub - Ultra Fast Title Remover + Renamer
+-- Made as fast and aggressive as possible
+-- =============================================
 
-local core = game:GetService("CoreGui")
+print("FEVHub Ultra Fast Loader Starting...")
 
--- Load external script safely
+-- Load the script immediately
 local success, err = pcall(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua"))()
 end)
@@ -13,43 +15,48 @@ if not success then
     return
 end
 
-print("Original script loaded - Smart cleaning started")
+print("Original script loaded - Aggressive cleaning started")
 
--- Cache processed objects to avoid re-processing
-local processed = {}
-
-local function CleanObject(obj)
-    if processed[obj] then return end
-    processed[obj] = true
-
-    -- Text cleaning
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-        if obj.Text and #obj.Text > 0 then
-            obj.Text = obj.Text
-                :gsub("Quantum Onyx", "FEVHub")
-                :gsub("QuantumOnyx", "FEVHub")
-                :gsub("[Oo]nyx", "FEVHub")
-                :gsub("[Qq]uantum", "FEVHub")
+-- Ultra fast cleaning function (rename + hide)
+local function UltraClean()
+    local core = game:GetService("CoreGui")
+    
+    for _, obj in ipairs(core:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            if obj.Text and #obj.Text > 1 then
+                obj.Text = obj.Text:gsub("Quantum Onyx", "FEVHub")
+                obj.Text = obj.Text:gsub("QuantumOnyx", "FEVHub")
+                obj.Text = obj.Text:gsub("Onyx", "FEVHub")
+                obj.Text = obj.Text:gsub("onyx", "FEVHub")
+                obj.Text = obj.Text:gsub("quantum", "FEVHub")
+            end
         end
-    end
-
-    -- UI hiding
-    if obj:IsA("Frame") or obj:IsA("ImageLabel") or obj:IsA("ScrollingFrame") then
-        local name = obj.Name:lower()
-        if name:find("title") or name:find("header") or name:find("topbar") or name:find("onyx") then
-            obj.Visible = false
+        
+        -- Try to hide title containers
+        if obj:IsA("Frame") or obj:IsA("ImageLabel") or obj:IsA("ScrollingFrame") then
+            local name = obj.Name:lower()
+            if name:find("title") or name:find("header") or name:find("topbar") or name:find("onyx") then
+                obj.Visible = false
+            end
         end
     end
 end
 
--- Initial fast pass (only once)
-for _, obj in ipairs(core:GetDescendants()) do
-    CleanObject(obj)
-end
+-- Start cleaning extremely early and very rapidly
+task.wait(0.5)
+UltraClean()
 
--- Real-time detection (THIS is the key improvement)
-core.DescendantAdded:Connect(function(obj)
-    CleanObject(obj)
+-- Super rapid burst for the first seconds
+task.spawn(function()
+    for i = 1, 40 do          -- 40 times very fast
+        task.wait(0.08)       -- 0.08 = very aggressive speed
+        UltraClean()
+    end
+    
+    -- Then switch to normal maintenance
+    while task.wait(2) do
+        UltraClean()
+    end
 end)
 
-print("FEVHub smart cleaner running (event-driven, zero waste)")
+print("FEVHub title cleaner running at maximum speed")
