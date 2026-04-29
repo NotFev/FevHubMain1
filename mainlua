@@ -1,0 +1,55 @@
+# FevHubMain1
+print("FEVHub Optimized Loader Starting...")
+
+local core = game:GetService("CoreGui")
+
+-- Load external script safely
+local success, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua"))()
+end)
+
+if not success then
+    warn("FEVHub Load Error: " .. tostring(err))
+    return
+end
+
+print("Original script loaded - Smart cleaning started")
+
+-- Cache processed objects to avoid re-processing
+local processed = {}
+
+local function CleanObject(obj)
+    if processed[obj] then return end
+    processed[obj] = true
+
+    -- Text cleaning
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+        if obj.Text and #obj.Text > 0 then
+            obj.Text = obj.Text
+                :gsub("Quantum Onyx", "FEVHub")
+                :gsub("QuantumOnyx", "FEVHub")
+                :gsub("[Oo]nyx", "FEVHub")
+                :gsub("[Qq]uantum", "FEVHub")
+        end
+    end
+
+    -- UI hiding
+    if obj:IsA("Frame") or obj:IsA("ImageLabel") or obj:IsA("ScrollingFrame") then
+        local name = obj.Name:lower()
+        if name:find("title") or name:find("header") or name:find("topbar") or name:find("onyx") then
+            obj.Visible = false
+        end
+    end
+end
+
+-- Initial fast pass (only once)
+for _, obj in ipairs(core:GetDescendants()) do
+    CleanObject(obj)
+end
+
+-- Real-time detection (THIS is the key improvement)
+core.DescendantAdded:Connect(function(obj)
+    CleanObject(obj)
+end)
+
+print("FEVHub smart cleaner running (event-driven, zero waste)")
