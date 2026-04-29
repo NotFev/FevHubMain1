@@ -1,54 +1,83 @@
 print("FEVHub Optimized Loader Starting...")
 
-local core = game:GetService("CoreGui")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 
--- Load external script safely
-local success, err = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua"))()
-end)
+-- === CONFIG ===
+local SCRIPT_URL = "https://raw.githubusercontent.com/flazhy/QuantumOnyx/main/QuantumOnyx.lua"
 
-if not success then
-    warn("FEVHub Load Error: " .. tostring(err))
+-- === SAFE LOADER ===
+local function loadExternal(url)
+    local ok, result = pcall(function()
+        local src = game:HttpGet(url)
+
+        if not src or #src < 100 then
+            error("Empty or invalid response from URL")
+        end
+
+        local fn, compileErr = loadstring(src)
+        if not fn then
+            error("Compile error: " .. tostring(compileErr))
+        end
+
+        return fn()
+    end)
+
+    if not ok then
+        warn("[FEVHub] Load failed:", result)
+        return nil
+    end
+
+    return result
+end
+
+local loaded = loadExternal(SCRIPT_URL)
+if not loaded then
     return
 end
 
-print("Original script loaded - Smart cleaning started")
+print("External script loaded - Cleaner init")
 
--- Cache processed objects to avoid re-processing
-local processed = {}
+-- === CACHE (weak keys prevents memory leaks) ===
+local processed = setmetatable({}, { __mode = "k" })
 
+-- === CLEANER ===
 local function CleanObject(obj)
-    if processed[obj] then return end
+    if not obj or processed[obj] then return end
     processed[obj] = true
 
-    -- Text cleaning
+    -- Guard against destroyed instances
+    if not obj.Parent then return end
+
+    -- Only touch safe UI classes
     if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-        if obj.Text and #obj.Text > 0 then
-            obj.Text = obj.Text
-                :gsub("Quantum Onyx", "FEVHub")
-                :gsub("QuantumOnyx", "FEVHub")
-                :gsub("[Oo]nyx", "FEVHub")
-                :gsub("[Qq]uantum", "FEVHub")
+        local text = obj.Text
+        if text and text ~= "" then
+            -- Minimal / non-destructive normalization
+            obj.Text = text:gsub("%s+", " ")
         end
     end
 
-    -- UI hiding
-    if obj:IsA("Frame") or obj:IsA("ImageLabel") or obj:IsA("ScrollingFrame") then
-        local name = obj.Name:lower()
-        if name:find("title") or name:find("header") or name:find("topbar") or name:find("onyx") then
+    -- OPTIONAL: very conservative visibility rule
+    if obj:IsA("Frame") then
+        local name = string.lower(obj.Name)
+
+        -- Only hide clearly non-critical decorative containers
+        if name == "title" or name == "header" then
             obj.Visible = false
         end
     end
 end
 
--- Initial fast pass (only once)
-for _, obj in ipairs(core:GetDescendants()) do
+-- === INITIAL PASS ===
+for _, obj in ipairs(CoreGui:GetDescendants()) do
     CleanObject(obj)
 end
 
--- Real-time detection (THIS is the key improvement)
-core.DescendantAdded:Connect(function(obj)
-    CleanObject(obj)
+-- === EVENT-DRIVEN (debounced) ===
+CoreGui.DescendantAdded:Connect(function(obj)
+    -- defer avoids race conditions during UI construction
+    task.defer(CleanObject, obj)
 end)
 
-print("FEVHub smart cleaner running (event-driven, zero waste)")
+print("FEVHub cleaner running (stable mode)")
